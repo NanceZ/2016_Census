@@ -25,7 +25,8 @@ g17_combined_qld     <- merge(g17a_qld, g17b_qld, by = "SSC_CODE_2016") %>% merg
 g17_combined_qld[ssc_mapping, on = .(SSC_CODE_2016), SSC_NAME_2016 := i.SSC_NAME_2016]
 g17_combined_qld[ssc_mapping, on = .(SSC_CODE_2016), SSC_NAME_2016 := i.SSC_NAME_2016][, state := "qld"]
 
-g17_combined <- rbind(g17_combined_nsw, g17_combined_qld)
+g17_combined <- rbind(g17_combined_nsw, g17_combined_qld) %>% .[, year := 2016]
+write_rds(g17_combined, file.path("Outputs/g17_combined_2016.rds"))
 
 # State suburb population distribution by age -----------------------------
 # 
@@ -36,11 +37,11 @@ g17_combined <- rbind(g17_combined_nsw, g17_combined_qld)
 
 # Analysis - median -------------------------------------------------------
 
-median_csv_fn("nsw")
-median_csv_fn("qld")
+median_csv_fn("nsw", year = "2016", locality_name = "SSC")
+median_csv_fn("qld", year = "2016", locality_name = "SSC")
 
-check_qld <- setDT(read.csv("Outputs/qld_ranked_ssc.csv"))
-check_nsw <- setDT(read.csv("Outputs/nsw_ranked_ssc.csv"))
+check_qld <- setDT(read.csv("Outputs/2016qld_ranked_SSC.csv"))
+check_nsw <- setDT(read.csv("Outputs/2016nsw_ranked_SSC.csv"))
 
 nancy_suburb <- c("Arana H", "Bridgem", "Eatons ", "Everton", "The Gap", "McDowal",
                   "Virgini", "Albany ", "Aspley" , "Banyo"  , "Boondal", "Carseld",
@@ -63,14 +64,21 @@ top_6_qld <-check_qld[
 top_6_qld_7_l <- str_sub(top_6_qld, 1, 7)
 
 # check_qld[str_sub(SSC_NAME_2016, 1, 7) %in% nancy_suburb][order(-median_income_bin)] %>% view()
+qld_top_6 <- check_qld[str_sub(SSC_NAME_2016, 1, 7) %in% top_6_qld_7_l][order(-median_income_bin)]
+qld_top_6[, .N, median_income_bin]
+nsw_top_4 <- check_nsw[str_sub(SSC_NAME_2016, 1, 7) %in% top_4_nsw_7_l][order(-median_income_bin)]
+nsw_top_4[, .N, median_income_bin]
+check_nsw[str_sub(SSC_NAME_2016, 1, 7) %in% "Crows N"]
+check_nsw[str_sub(SSC_NAME_2016, 1, 7) %in% "Frenchs"]
 
 # Export charts ----------------------------------------------------------------
 
-pdf("Outputs/selected_qld.pdf")
+pdf("Outputs/selected_qld_2016.pdf")
 
 list <- list()
 for (i in seq_along(nancy_suburb_full_letters)) {
-  plot <- pop_profile_chart_fn(nancy_suburb_full_letters[i], "qld") 
+  print(nancy_suburb_full_letters[i])
+  plot <- pop_profile_chart_fn(nancy_suburb_full_letters[i], "qld", year = "2016", locality_name = "SSC") 
  list <- list(list, plot)
 }
 list
@@ -78,11 +86,11 @@ list
 dev.off()
 
 
-pdf("Outputs/top_6_qld.pdf")
+pdf("Outputs/top_6_qld_2016.pdf")
 
 list <- list()
 for (i in seq_along(top_6_qld)) {
-  plot <- pop_profile_chart_fn(top_6_qld[i], "qld") 
+  plot <- pop_profile_chart_fn(top_6_qld[i], "qld", year = "2016", locality_name = "SSC") 
   list <- list(list, plot)
 }
 list
@@ -90,13 +98,14 @@ list
 dev.off()
 
 
-pdf("Outputs/top_4_nsw.pdf")
+pdf("Outputs/top_4_nsw_2016.pdf")
 
 list <- list()
 for (i in seq_along(top_4_nsw)) {
-  plot <- pop_profile_chart_fn(top_4_nsw[i], "nsw") 
+  plot <- pop_profile_chart_fn(top_4_nsw[i], "nsw", year = "2016", locality_name = "SSC") 
   list <- list(list, plot)
 }
 list
 
 dev.off()
+   

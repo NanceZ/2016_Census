@@ -1,26 +1,46 @@
-pop_profile_chart_fn <- function(ssc_full, state_var) {
-  # ssc_first_7_letter <- "The Gap"
+pop_profile_chart_fn <- function(locality_full, state_var, year = "2021", locality_name = "SAL") {
+  # locality_full <- "Zilzie"
   # state_var <- "qld"
+  # locality_full <- "Albany Creek"
+  code_var <- paste0(locality_name, "_CODE_", year)
+  name_var <- paste0(locality_name, "_NAME_", year)
+  
   g17_combined_filtered <- g17_combined[state == state_var][, state := NULL]
   # ssc_7l <- ssc_first_7_letter
   
   # patch to select first suburb in case of duplicates
-  # ssc_full <- g17_combined_filtered[str_sub(SSC_NAME_2016, 1, 7) == ssc_7l, .(SSC_NAME_2016)][1]
+  # locality_full <- g17_combined_filtered[str_sub(SSC_NAME_2016, 1, 7) == ssc_7l, .(SSC_NAME_2016)][1]
   
   # Ignore columns by age
   tot_cols <- names(g17_combined_filtered)[
     str_sub(names(g17_combined_filtered), -3, -1) == "Tot"]
   
-  all_ages_selected_ssc <- g17_combined_filtered[
-    SSC_NAME_2016 == ssc_full, ..tot_cols] %>% 
-    melt(value.name = "population_count",
-         variable.name = "income_bin") %>% 
-    .[, gender := str_sub(income_bin, 1, 1)] %>% 
-    .[str_sub(income_bin, -7, -1) != "Tot_Tot" & str_sub(income_bin, -7, -1) != "_ns_Tot" ] %>% 
-    .[, tot_by_gender := sum(population_count)
-      , .(gender)] %>% 
-    .[, population_pp := round(population_count/tot_by_gender * 100, 2)
-      , .(gender)]
+  name_var_index_lookup <- names(g17_combined_filtered) %>% match(name_var)
+  name_var_index        <- which( name_var_index_lookup == '1') 
+  if(year == "2021") {
+    all_ages_selected_ssc <- g17_combined_filtered[
+      g17_combined_filtered[[name_var_index]] == locality_full, ..tot_cols] %>% 
+      melt(value.name = "population_count",
+           variable.name = "income_bin") %>% 
+      .[, gender := str_sub(income_bin, 1, 1)] %>% 
+      .[str_sub(income_bin, -7, -1) != "Tot_Tot" & str_sub(income_bin, -7, -1) != "_ns_Tot" ] %>% 
+      .[, tot_by_gender := sum(population_count)
+        , .(gender)] %>% 
+      .[, population_pp := round(population_count/tot_by_gender * 100, 2)
+        , .(gender)]  } else {
+    all_ages_selected_ssc <- g17_combined_filtered[
+      g17_combined_filtered[[name_var_index]] == locality_full, ..tot_cols] %>% 
+      melt(value.name = "population_count",
+           variable.name = "income_bin") %>% 
+      .[, gender := str_sub(income_bin, 1, 1)] %>% 
+      .[str_sub(income_bin, -7, -1) != "Tot_Tot" & str_sub(income_bin, -7, -1) != "_ns_Tot" ] %>% 
+      .[, tot_by_gender := sum(population_count)
+        , .(gender)] %>% 
+      .[, population_pp := round(population_count/tot_by_gender * 100, 2)
+        , .(gender)]
+  }
+  
+
   
   ssc_median <- all_ages_selected_ssc[
     , `:=`(cumsum = cumsum(population_pp))
@@ -42,7 +62,7 @@ pop_profile_chart_fn <- function(ssc_full, state_var) {
     coord_flip() +
     theme_bw() +
     labs(title = 
-           ssc_full,
+           locality_full,
          caption = paste0(
            "Median: ",
            ssc_chart_dt[gender == "P", .(unique(as.character(median_income_bin)))],
